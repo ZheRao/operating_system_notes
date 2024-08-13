@@ -1,0 +1,225 @@
+
+Chapter 1 - Intro & Background
+
+Part 1
+
+keyword
+    kernel layer vs. command interpretor layer
+
+- Operating System is
+    -- the interface between user and computer (hardware)
+    -- users talk to the OS with high level programming language, then the OS converts them to machine language (understandable by hardware)
+        hardware performs the execution, sends results (in the form of 0 and 1) to OS, OS sends results to users (in the form that users understand)
+
+- Hardware consists of 
+    -- IO 
+    -- Memory
+        --- Primary memory: volatile, faster to access, expensive, lower size; includes RAM, cache, ...
+            CPU only have access to primary memory
+        --- Secondary memory: non-volatile, slower to access, less expensive, larger siz; inclues hard disk
+            secondary memory are part of IO devices
+    -- CPU
+        --- Control unit: help power of generation, timing or control signal that controls operation, also known for sequential execution of micro operations
+            e.g., 
+                int a, b, c;
+                b = 1; c = 2;
+                a = b + c;
+            compiles into micro instructions
+                1. load R_1, b
+                2. load R_2, c 
+                3. add R_1, R_2,
+                4. store a, result
+        --- Arithmetic logic unit: carries out arithmatic and logical operations
+
+- How are programs executed in the VN architecture
+    -- C files (passes)----> compiler (convert)-----> executable form of instructions (passes)-----> 
+        OS (loads for execution)------> primary memory (passes)-----> CPU -----> performs sequential execution
+    
+    -- CPU cannot execute programs directly from the hard disk ---> hard disks loading too slow, CPU is too fast
+
+- there are two layers to the OS interface
+    -- l1: command interpretor, consists of Shell or GUI, maintains communication between user and OS
+    -- l2: OS kernel, performs required operations with the management of hardware which consists of
+        --- process manager (CPU)
+        --- memory manager (Memory)
+        --- file manager   |
+        --- device manager | (Devices)
+        --- protection manager (Resources)
+
+- OS acting as resources manager
+    -- software resources: files, ...
+    -- hardware resources: CPU, monitors, IO devices, ...
+
+- OS setting of utilities to simplify application development
+    -- takes charge of hardware
+    -- create environment/platform that help us to focus on developing in high-level mode
+    -- OS will perform work at the back of stage
+
+- OS functions
+    -- processor management
+    -- memory management
+    -- error detection
+    -- security
+    -- file management
+
+
+
+
+
+
+
+Part 2 - types of OS
+
+keywords: 
+    multi-programming OS
+    pre-emptive multi-programming OS
+    address translation
+    user mode vs. kernel mode
+
+- basic OS
+    -- multi-programming OS 
+    -- batch OS 
+    -- time sharing OS 
+    -- real-time OS
+
+- advanced (multiprocessor) OS 
+    -- distributed OS
+    -- network OS 
+
+
+- uni-programming OS: ability of OS to hold a single program in memory
+    -- i.e., OS can load only a single program from memory
+    -- if the program that is loaded is not in the CPU, for example, it has been moved to the IO devices, then CPU becomes idle ----> inefficient CPU utilization, throughput drops
+        --- throughput - number of programs completed in a unit time
+
+- multi-programming OS: OS can hold multiple ready-to-run programs
+    -- impression of multiplexing of CPU among different programs
+        --- e.g., P1 has been moved to IO device, cpu will work on P2, and after P2 is finished, moved to elsewhere, P1 came back, and cpu continues working on P1
+        --- note: one CPU can only work on one program at any given time
+    -- example
+        OS loads job1, job2, job3, job4 from secondary storage to main memory
+        after CPU executed job1 and move it to IO devices, CPU will be executing job2 while job3, and job4 are ready and waiting for CPU
+    -- type1: Pre-emptive - forceful deallocation from CPU, based on priority of time
+        --- pre-emptive based on time is also known as the time-sharing OS
+        --- if job3 is in top prority (or takes too long), the CPU will deallocate job2, and executing job3 instead, job2 will be moved to main memory and awaits later execution
+    -- type2: Non-preemptive - nobody will force the program to leave CPU
+        --- it will release the CPU voluntarily due to: 1. all instructions are complete, or 2. needs IO, or 3. system call
+    -- Drawback, particularly for non-preemptive
+        --- starvation / indefinite waiting for other programs (improved by pre-emptive by forcefully deallocating programs based on priority and time)
+        --- lacks of interactiveness / responsiveness
+
+    -- multi-tasking OS: pre-exptive based multi-programming OS
+
+
+- architectural (hardware) requirements for implementing a multi-programmed OS
+    -- secondary storage device (IO) --> DMA (Direct Memory Access) compatible
+        --- Efficient data transfer between secondary storage and main memory
+    -- memory system should support address translation
+        --- program (in CPU) generates logical address (to access its instruction or data from main memory), and the logical address can be converted into physical address 
+                by the OS (memory management unit) to retrieve the data or instruction
+        --- example of logical address vs. physical address
+                logical address of John's house: go north 200 meters and turn right
+                physical address of John's house: exact coordinates of the house 
+        --- why use logical address instead of physical address
+                security
+                the exact location of data can be protected against other (malware) programs
+    -- CPU must support dual mode operation (user mode and kernel mode)
+        --- user mode: non-privileged mode - user applications (e.g., power point), like regular car on the road
+                in user mode, the executing code has no ability to directly access hardware or reference memory. code running in user mode must delegate to system APIs to 
+                access hardware or memory. due to the protection afforded by this sort of isolation, crashes in user mode are always recoverable. most of the code running
+                on the computer will execute in user mode
+        --- kernel mode: privileged mode - OS kernel routine programs (e.g., procress management, file management), like ambulance on the road
+                in kernel mode, the executing code has complete and unrestricted access to the underlying hardware. it can execute any CPU instruction and reference any
+                memory address. kernel mode is generally reserved for the lowest-level, most trusted functions of the operating system. crashes in kernel mode are 
+                catastrophic; they will halt the entire PC
+        --- there is a register in CPU (PSW: processor status word) that has mode bit being 0 is kernel mode and 1 is user mode
+
+
+
+
+
+
+
+Part 3 - user mode and kernel mode
+
+keywords
+    mode shifting
+    complier
+    system call: fork
+    software interrupt
+    ISR: interrupt service routine
+    PSW: processor status word
+    system call inside built-in function
+
+
+
+- OS is the service provider and user programs are the service users
+    -- whenever we need some OS service we need to shift from user mode to kernel mode
+    -- after the complition of that service, we need to switch from kernel mode to user mode
+
+- what programs are executed in user mode vs. kernel mode
+    -- user code ----> compiler (convert to instructions) -----> main memory (load) ------> CPU (execution)
+    -- user defined functions and library (built-in) functions are executed in the user mode
+    -- only OS service routines and system calls are executed in the kernel mode
+
+- compliers are not part of OS
+
+- example of system call: fork
+    -- execution of fork() results in creating child processes
+    -- system calls are functions called to the OS
+    -- fork is defined and implemented in OS kernel
+    -- fork is an OS routine
+
+- execution of system calls vs. user functions
+    -- system calls is converted to SVC (supervisory call; privileged instructions) and will be executed in kernel mode
+        --- at run time, supervisory call will generate a software interrupt, it informs the OS of some activity
+        --- then, it generates an ISR (interrupt service routine): every interrupt has a routine to service, it includes two steps
+                1. change the mode bit from 1 to 0 (shifting from user mode to kernel mode) in PSW (processor status word)
+                2. find address of the fork from dispatch table (a data structure table in RAM that OS maintains, it tells what all services OS provides)
+        --- after the execution is complete, ISR will go to the PSW (processor status word) to change the mode bit from 0 back to 1
+    -- in comparison, user functions are convered to BSA (branch&save address; non-privileged instructions)
+
+
+- work flow
+
+                    fork ----> SVC -----> ISR ---------> PSW <-----------------------
+                                                |                                   |
+                                                |                                   |
+                                                |                                   |
+                                                |------> dispatch table             |
+                                                                |                   |
+                                                                |                   |
+                                                                |                   |
+                      exe of instructions <----- address  <-----|                   |
+                            |                                                       |
+                            |                                                       |
+                            |                                                       |    
+                            |--------> last instruction executed -------------------- 
+
+
+- system call inside built-in function: printf()
+    -- library functions like printf can also use system calls with write()
+    -- same process until last instruction is executed
+        --- user process - SVC - trap (same as ISR) - dispatch address and execution
+    -- after last instruction is executed
+        --- no ISR
+        --- change mode bit to 1 and return (in the kernel)
+        --- no interrupt is generated during kernel ---> user
+    -- so we need just a privilege instruction without interruption to switch from kernel to user mode
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
