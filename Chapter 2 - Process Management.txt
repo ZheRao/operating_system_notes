@@ -1,0 +1,299 @@
+Chapter 2 - Process Management
+
+Part 1 - understanding process
+
+keywords
+    process vs. program
+    memory allocation
+    compile time vs. load time vs. run time
+    heap & stack
+    address record
+    PCB: process control block
+
+
+
+
+
+- process vs. program
+    -- after a program is being compiled into .exe file, 
+        --- if this file is present in the hard disk, it is a program, 
+        --- if this file is present in the memory, it is a process
+    -- object to class -----> process to program ------> equal relationship
+
+- data in memory
+    -- two types of data
+        --- static (fixed size/known size)
+        --- dynamic (memory allocated at Runtime)
+    -- does static data get memory allocation at Compile time? No
+        --- compile time meant for checking syntactic correctness and generating the code (convert to instructions)
+        --- if a code is compiled but not run, if memory allocation took place, it would be a waste
+        --- compiler only decides how much memory should be there at compile time
+    -- there is another time between CT and RT which is load time
+        --- static data memory allocation happens at load time
+
+
+- process (definition)
+    -- program in execution (using computer resources)
+    -- program when it get loaded into memory
+    -- instance of a program
+    -- active entity / program is passive (doesn't use any resources)
+    -- always in memory
+    -- locus of control of OS ----> people are the locus for the government
+    -- program has process ----> body has soul
+
+- process (representation): how does process look like in memory?
+    -- part 1: text
+        --- code section
+    -- part 2: data
+        --- global variables + static data (fixed size)
+        --- data can be initialized data (e.g., int x=1;) or uninitialized data (e.g., int x;) (.bss)
+    -- part 3: heap (shiftable with part 4)
+        --- this is the area in memory for dynamic memory allocation
+    -- part 4: stack (shiftable with part 3)
+        --- this is activation records and function calls
+        --- address record doesn't contain the address of the function
+        --- address record contains information & space of local variables (of a function) and return address of that function
+              for example, a function is declared, when the code compiles, address record will record the local variables and return address of the function
+        --- activation record of main function gets deleted when the function is completed
+
+- process (operations):
+    -- create(): resource allocation
+        --- procress get created, memory & resources which are necessary for process are allocated
+    -- terminate(): resource deallocation
+        --- all the resources given to the process are freed
+    -- schedule(): the act of selecting process to run on CPU
+    -- execute() / run(): executing instructions from code section
+    -- block() / wait(): process will get blocked when it is about to execute system call/IO operation
+    -- suspend(): sometime we need to move process from memory to disk
+    -- resume(): move process from disk to memory
+
+- process (attributes)
+    -- identification: <process id; parent process id; group id; ...>
+    -- CPU related: <program counter; priority; state; burst time>
+        --- program counter: will point to the next instruction to be executed
+        --- priority: the level of importance given by the OS to the process
+        --- state: running state, suspended state, ...
+        --- burst time: how much time the process has spent in the CPU for execution
+    -- memory related: <size; limits (process is in which area) ...> of memory
+    -- file related: <list of files in use>
+    -- device related
+    -- ...
+    -- accounting related
+    -- all attributes are stored in PCB (process control block)
+        --- PCB contains attributes of process
+        --- each process has its own PCB
+        --- PCB is stored in memory
+
+
+
+
+
+part 2 - process life cycle
+
+
+keywords
+    process life cycle
+    process state transition diagram
+        scheduling and dispatch
+        suspension
+
+
+- during the process life time, process goes from one state to another
+    -- new: gets created, resource allocation
+    -- ready: ready to run on CPU
+    -- running: process is executing instructions on CPU
+    -- block/wait (leaves the CPU): proces need to perform I/O / execute system call
+        --- I/O means reading something from device / writing something to device
+    -- terminate (resources deallocation): process has completed all of its instructions
+
+- process state transition diagram
+    -- state new create state ready
+    -- state ready transitions to state running through scheduling and dispatch
+        --- scheduling means making a decision out of memory ready processes which will be chosen for CPU
+        --- dispatch means CPU gains the rights to execute instructions of that process
+        --- note that when a program becomes a process by loading it from hard disk to main memory, it's actually moved
+                but when the process got "moved" to CPU, no physical move took place
+                the process still remains in the main memory, CPU just gets the control to execute the process
+    -- state running transitions to state block/wait through I/O or system calls
+    -- state block/wait transitions to state ready through I/O or system call completion
+        --- due to this state, we can say this is multiprogramming OS
+    -- state running transitions to state terminated through completion
+    -- this is a non-preemptive OS because process cannot be forced to leave CPU, only when 1. completion, 2. IO and 3. system call
+    -- for a uni-programming OS, there is no ready state because there is only a single program
+
+
+
+                        (create)                  (scheduling)                          (completed)
+         new ---------------------- ready ----------------------- running (CPU) ---------------------------- terminated
+                                                    (dispatch)
+                                        \                            /
+                                         \                          /
+                                          \                        /     (I/O) 
+                            (I\O)          \                      /       or
+                                or          \                    /
+                            (system call)    \                  /    (system call)
+                            completed         \                /
+                                               \              /
+                                                (in main memory)
+                                                  block/wait 
+        
+
+- important notes
+    -- every process will complete from running state
+        --- "exit" will be written at the end of program and that statement must be executed on CPU to terminate the process
+    -- if a process is in state ready/running/blocked, it's in the main memory 
+            new         --> entering the main memory 
+            terminate   --> leaving the main memory
+    -- there can be multiple processes in state ready and block/wait but there can be at max 1 running process for one CPU
+
+- suspension
+    -- let's say there are 120 ready programs in main memory but OS can handle only 100. So OS will transfer 20 from main memory to hard disk to improve performance
+        --- processes in the ready/running/block state (i.e., in the main memory) can be suspended
+        --- ready state is the most desired state to suspend
+        --- ready state <-----------------------------------------------------------> suspend_ready state
+        --- block/wait state <--------------------------------------------------------------------------> suspend_block state
+        --- suspend_block --------------------------------> suspend_ready state
+                if a process is waiting for data from a file, it will be in the "suspended block" state until the data becomes available.
+                once the data is ready, the process transitions to "suspended ready" and can be scheduled to run by the OS
+        --- suspending running state process is possible but not desirable
+
+- questions
+    -- why the process moved from block state to suspended_block state?
+        a process is moved to the suspended_block state due to resource management and multitasking needs
+        when a process is in the blocked state, it is waiting for an IO operation to complete. However, sometimes the OS needs to free up resources,
+            or it might need to pause the process for other reasons (like if the user switches to a different application). In these cases, the 
+            operating system can move the process from the blocked state to the suspended_block state
+
+    -- why send to suspend_ready instead of ready?
+        this is due to the way operating systems manage memory and resources
+        when a process is in the suspended_block state, it's not in the main memory but is swapped out to the disk. This is done to free up main
+            memory for other active processes. When the IO operation that the process was waiting for is complete, the process becomes ready in a 
+            logical sense, but it's not in the main memory. so it's in the suspended_ready state
+        before the process can actually be executed (moved to the ready state), it needs to be brought back into the main memory from disk. the decision
+            of when to load the process is made by the OS based on various factors like system load, memory usage, priority of processes, etc.
+        so the suspended_ready state is a way for the OS to acknowledge that a process is ready to run but hasn't yet been loaded back into main memory
+
+    -- why sometimes resuming the process from suspended_block to block instead of sending it to suspended_ready and then ready?
+        ---> block is typically used when the system has enough resources (like memory) to keep the process in main memory.
+            when the IP operation is complete, the process can be moved directly back to block state because it's already in main memory
+        ---> suspend_ready ---> ready typically used when the system needs to free up resources. after IO operation is completed, the process is still
+            on disk in the suspended_ready state. Once the system resources becomes available, the process can be swapped back into main memory and 
+            move to the ready state
+
+
+
+
+
+
+
+Part 3 - scheduling queues and state queuing diagram
+
+
+keywords
+    ready queue/block queue
+    job queue/suspend queue
+    long term/ short term/ medium term scheduler
+    context switching
+
+
+
+
+
+- queues
+    -- on memory queue
+        --- ready queue (ready state)
+                ready queue contains the list of PCBs (process control block) of ready process
+                they are in the form of linked list
+                e.g., PQ ---> PCB_i ---> PCB_j ---> PCB_k ---> ...
+        --- block queue (block state)
+                also known as device queue
+                each IO device has its own queue
+                it contains a list of PCBs that get blocked onto that device
+                e.g., for IO_3: DQ_3 ---> PCB_3i ---> PCB_3j ---> ...
+    
+    -- on disk queue
+        --- job queue (new state)
+                contains programs ready to be loaded into memory
+        --- suspend queue (represent both suspend block and ready)
+                list of processes that gets suspended from memory onto disk
+
+
+
+- scheduling queues diagram
+
+    Job Q        (ready)                                                           running                 terminate
+-------------> ready queue ---------------------------------------------------------- CPU ------------------->
+    |                                                                                         |
+    |                                                                                         |
+    |                                           (block state)                                 |
+    |--------- IO <---------------- IO queue <---------------------- IO request <-------------|
+    |                                                                                         |
+    |                                                                                         |
+    |                                                                                         |
+    |               time pre-emption                                                          |
+    |-------------------------------------------------------- timeslice expired <-------------|
+    |                                                                                         |
+    |                                                                                         |
+    |                                                                                         |
+    |                                           (block state)        (system call)            |
+    |----------------------- child executes <---------------------- fork a child <------------|
+    |                                                                                         |
+    |                                                                                         |
+    |                                                                                         |
+    |                                           (block)             (event/interrupt)         |
+    |---------------------- interrupt occurs <----------------- wait for an interrupt <-------|
+    
+
+    -- if any non-completed process exits from CPU will join back to ready queue eventually
+
+
+
+- schedulers
+    -- scheduling means making a decision among many processes
+    -- places where we have to make decisions:
+        --- job queue
+        --- ready queue
+        --- suspend queue
+    -- scheduler is the component of OS that makes the decision 
+        --- following names given based on frequency of activation
+        --- long term scheduler:                        New -------> Ready
+        --- short term scheduler (CPU scheduler):       Ready -----> Running
+        --- medium term scheduler (swapper):            Process suspension & Resuming
+
+
+                                                                                MTS
+                        |--- partially executed Swapped out process <------------------------------|
+                        |                                                                          |
+                        |                                                                          |
+                        |                                                                          |
+                        |                                                                          |
+                    LTS |                                   STS                                    |
+    job queue -----------------------> ready queue -----------------------------> CPU -------------
+
+
+
+    -- which scheduler controls the degree of multiprogramming?
+        --- long term scheduler (it chooses how many processes to load from hard disk to main memory)
+
+
+- dispatcher: responsible for carrying out the activity of context switching 
+    -- dispatcher works with short term scheduler
+    -- context switching ---> activity of loading & saaving the process during a process switch on CPU
+        --- e.g., P_a was loaded for execution in CPU, pre-emption occurred, P_c requires execution, P_a is saved/moved and P_c is loaded to CPU
+                    saving the PCB of the CPU leaving process & loading the PCB of the next process is context switching
+                    can be saved to ready queue (pre-emption) or block queue (IO needed)
+        --- time takes by dispatcher to perform context switching is 
+                context switch time
+                dispatch latency
+                CPU scheduling overhead 
+    -- dispatcher is not involved in suspension of processes 
+        
+    
+
+
+
+
+
+
+
+
